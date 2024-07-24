@@ -8,22 +8,22 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/ahmetardacelik/fromMac/models"
-	"github.com/ahmetardacelik/fromMac/repository"
-	"github.com/ahmetardacelik/fromMac/spotify"
+	"github.com/ahmetardacelik/oldComparison/models"
+	"github.com/ahmetardacelik/oldComparison/repository"
+	"github.com/ahmetardacelik/oldComparison/spotify"
 	"github.com/gorilla/mux"
 	"golang.org/x/oauth2"
 )
 
 type Handler struct {
 	SpotifyService *spotify.SpotifyService
-	Client         spotify.Client
+	Client         *spotify.Client
 }
 
 func NewHandler(service *spotify.SpotifyService, cl *spotify.Client) *Handler {
 	return &Handler{
 		SpotifyService: service,
-		Client:         *cl,
+		Client:         cl,
 	}
 }
 
@@ -37,7 +37,12 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 }
 
 func (h *Handler) topArtistsHandler(w http.ResponseWriter, r *http.Request) {
-	topArtists, err := h.Client.FetchTopArtistsWithParsing() // bura icin handlerin clienti nil mi diye kontrol clientin propertyleri de
+	if h.Client.Client == nil {
+		http.Error(w, "Spotify client not initialized", http.StatusInternalServerError)
+		return
+	}
+
+	topArtists, err := h.Client.FetchTopArtistsWithParsing()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -86,13 +91,13 @@ func (h *Handler) topArtistsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
+
 func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 	url := spotify.Config.AuthCodeURL("", oauth2.AccessTypeOffline)
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 
 func (h *Handler) callback(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("bise")
 	code := r.URL.Query().Get("code")
 	if code == "" {
 		http.Error(w, "Code not provided", http.StatusBadRequest)
@@ -111,13 +116,10 @@ func (h *Handler) callback(w http.ResponseWriter, r *http.Request) {
 	}
 	http.Redirect(w, r, "/top-artists", http.StatusFound)
 }
-func convertToRepositoryArtist(artist models.Artist) repository.Artist {
-	return repository.Artist{
-		ID:         artist.ID,
-		Name:       artist.Name,
-		Popularity: artist.Popularity,
-		Followers:  artist.Followers.Total,
-	}
+
+func (h *Handler) analyzeHandler(w http.ResponseWriter, r *http.Request) {
+	h.analyzeData()
+	w.Write([]byte("Analysis complete. Check server logs for details."))
 }
 
 func (h *Handler) analyzeData() {
@@ -143,11 +145,6 @@ func (h *Handler) analyzeData() {
 		}
 		fmt.Printf("%s: %d\n", genre, count)
 	}
-}
-
-func (h *Handler) analyzeHandler(w http.ResponseWriter, r *http.Request) {
-	h.analyzeData()
-	w.Write([]byte("Analysis complete. Check server logs for details."))
 }
 
 func (h *Handler) fetchRecordedDataHandler(w http.ResponseWriter, r *http.Request) {
@@ -177,4 +174,13 @@ func (h *Handler) fetchRecordedDataHandler(w http.ResponseWriter, r *http.Reques
 
 func serveIndex(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "index.html")
+}
+
+func convertToRepositoryArtist(artist models.Artist) repository.Artist {
+	return repository.Artist{
+		ID:         artist.ID,
+		Name:       artist.Name,
+		Popularity: artist.Popularity,
+		Followers:  artist.Followers.Total,
+	}
 }

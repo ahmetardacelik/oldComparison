@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/ahmetardacelik/fromMac/repository"
-	"github.com/ahmetardacelik/fromMac/spotify"
+	"github.com/ahmetardacelik/oldComparison/repository"
+	"github.com/ahmetardacelik/oldComparison/spotify"
 	"github.com/gorilla/mux"
 )
 
@@ -31,7 +31,7 @@ func main() {
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
 		Repository:   spotifyRepository,
-		Client: &http.Client{},
+		Client:       &http.Client{},
 	}
 	// req := CreateGetRequest()
 	// token := GetTokenByExhange(req, spotifyClient)
@@ -39,17 +39,15 @@ func main() {
 
 	spotifyHandler := NewHandler(spotifyService, &spotifyClient)
 
-
 	// HTTP router setup
 	router := mux.NewRouter()
 	spotifyHandler.RegisterRoutes(router)
 	if spotifyClient.Client == nil {
-        log.Fatal("Spotify HTTP client has not been initialized.")
-    }
+		log.Fatal("Spotify HTTP client has not been initialized.")
+	}
 
 	// Start the periodic data fetching
-	go spotifyClient.PeriodicallyFetchData()
-	
+	//go spotifyClient.PeriodicallyFetchData()
 
 	log.Println("HTTP server running on port 8080...")
 	log.Fatal(http.ListenAndServe(":8080", router))

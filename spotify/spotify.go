@@ -11,8 +11,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/ahmetardacelik/fromMac/models"
-	"github.com/ahmetardacelik/fromMac/repository"
+	"github.com/ahmetardacelik/oldComparison/models"
+	"github.com/ahmetardacelik/oldComparison/repository"
 	"golang.org/x/oauth2"
 )
 
@@ -106,17 +106,14 @@ func (c *Client) makeRequest(url string) ([]byte, error) {
 
 	req, err := http.NewRequest("GET", url, nil)
 
-	//
-	//
-	//
-	//
-	//
-
 	if err != nil { //
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.Token.AccessToken)) //
+	if c.Token.AccessToken == "" {
+		fmt.Println("token is empty")
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.Token.AccessToken)) //TODO
 	resp, err := c.Client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("error on request: %w", err)
@@ -135,8 +132,8 @@ func (c *Client) makeRequest(url string) ([]byte, error) {
 
 func (c *Client) FetchTopArtistsWithParsing() (models.TopArtistsResponse, error) {
 
-	data, err := c.makeRequest("https://api.spotify.com/v1/me/top/artists")
-	if err != nil { //
+	data, err := c.makeRequest("https://api.spotify.com/v1/me/top/artists") //TODO
+	if err != nil {                                                         //
 		return models.TopArtistsResponse{}, err
 	}
 
@@ -171,7 +168,7 @@ func (c *Client) PeriodicallyFetchData() {
 			continue
 		}
 
-		topArtists, err := c.FetchTopArtistsWithParsing() //
+		topArtists, err := c.FetchTopArtistsWithParsing() //TODO
 		if err != nil {
 			log.Printf("Error fetching top artists: %v", err)
 			continue
